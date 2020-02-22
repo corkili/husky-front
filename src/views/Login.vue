@@ -2,66 +2,57 @@
   <div class="login_div">
     <el-card class="box-card">
       <div slot="header" class="clearfix">
-        <span>注册</span>
+        <span>登录</span>
       </div>
-      <el-input v-model="registerParam.username" class="text item" prefix-icon="el-icon-phone" placeholder="请输入用户名" maxlength="11"></el-input>
-      <el-input v-model="registerParam.phone" class="text item" prefix-icon="el-icon-phone" placeholder="请输入手机号" maxlength="11"></el-input>
-      <el-input v-model="registerParam.password" class="text item" prefix-icon="el-icon-lock" placeholder="请输入密码" show-password></el-input>
-      <el-button type="primary" class="text item" :icon="icon" @click="register" :disabled="onRegister">{{ registerButtonText }}</el-button>
+      <el-input v-model="loginParam.phone" class="text item" prefix-icon="el-icon-phone" placeholder="请输入手机号" maxlength="11"></el-input>
+      <el-input v-model="loginParam.password" class="text item" prefix-icon="el-icon-lock" placeholder="请输入密码" show-password></el-input>
+      <el-button type="primary" class="text item" :icon="icon" @click="login" :disabled="onLogin">{{ loginButtonText }}</el-button>
     </el-card>
   </div>
 </template>
 
 <script>
 export default {
-  name: "Login",
+  name: 'Login',
   data: () => {
     return {
-      registerParam: {
-        username: "",
-        phone: "",
-        password: "",
+      loginParam: {
+        phone: '',
+        password: ''
       },
-      registerButtonText: "注册",
-      icon: "el-icon-edit",
-      onRegister: false
+      loginButtonText: '登录',
+      icon: 'el-icon-position',
+      onLogin: false
     }
   },
   methods: {
-    changeState(onRegister) {
-      if (onRegister) {
-        this.registerButtonText = "注册中";
-        this.icon = "el-icon-loading";
-        this.onRegister = true
+    changeState: function(onLogin) {
+      if (onLogin) {
+        this.loginButtonText = '登录中';
+        this.icon = 'el-icon-loading';
+        this.onLogin = true;
       } else {
-        this.registerButtonText = "注册";
-        this.icon = "el-icon-edit";
-        this.onRegister = false
+        this.loginButtonText = '登录';
+        this.icon = 'el-icon-position';
+        this.onLogin = false;
       }
     },
-    register: function() {
-      if (this.registerParam.username === '') {
-        this.$message({
-          message: '用户名不能为空',
-          type: 'warning'
-        });
-        return
-      }
-      if (this.registerParam.phone === '') {
+    login: function() {
+      if (this.loginParam.phone === '') {
         this.$message({
           message: '手机号不能为空',
           type: 'warning'
         });
         return
       }
-      if (this.registerParam.phone.length !== 11) {
+      if (this.loginParam.phone.length !== 11) {
         this.$message({
           message: '手机号长度应为11',
           type: 'warning'
         });
         return
       }
-      if (this.registerParam.phone.password === '') {
+      if (this.loginParam.phone.password === '') {
         this.$message({
           message: '密码不能为空',
           type: 'warning'
@@ -70,14 +61,15 @@ export default {
       }
       this.changeState(true);
       let _this = this;
-      this.$store.dispatch('user/register', this.registerParam)
+      this.$store.dispatch('user/login', this.loginParam)
         .then((response) => {
           if (response.code === 0) {
             this.$message({
               message: response.uiMsg,
               type: 'success'
             });
-            _this.$router.replace('/sign_in')
+            _this.$store.commit('user/onLogin', response.data);
+            _this.$router.replace('/home')
           } else {
             this.$message({
               message: response.uiMsg,

@@ -1,3 +1,7 @@
+import axiosConfig from '../../plugins/axiosConfig'
+
+let axios = axiosConfig();
+
 const state = {
   id : -1,
   name: "",
@@ -17,9 +21,9 @@ const getters = {
 };
 
 const mutations = {
-  onLogin(state, { id, name, phone }) {
+  onLogin(state, { id, username, phone }) {
     state.id = id;
-    state.name = name;
+    state.name = username;
     state.phone = phone;
   },
   onLogout(state) {
@@ -30,7 +34,45 @@ const mutations = {
 };
 
 const actions = {
-
+  async login(context, params) {
+    return new Promise(function(resolve, reject) {
+      axios.post('/api/user/login', params)
+        .then((response) => {
+          resolve(response)
+        })
+        .catch(function(error) {
+          reject(error);
+          console.log(error);
+        });
+    });
+  },
+  async logout(context) {
+    return new Promise(function (resolve, reject) {
+      let params = {
+        id: context.state.id
+      };
+      axios.post('/api/user/logout', params)
+        .then((response) => {
+          resolve(response)
+        })
+        .catch(function (error) {
+          reject(error);
+          console.log(error);
+        })
+    })
+  },
+  async register(context, params) {
+    return new Promise(function(resolve, reject) {
+      axios.post('/api/user/register', params)
+        .then((response) => {
+          resolve(response)
+        })
+        .catch(function(error) {
+          reject(error);
+          console.log(error);
+        });
+    });
+  }
 };
 
 export default {
