@@ -1,4 +1,4 @@
-import axiosConfig from '../plugins/axiosConfig'
+import axiosConfig from '../plugins/axios_config'
 import store from '../store'
 import router from '../router'
 

@@ -1,5 +1,5 @@
 import Vue from 'vue';
-import axios from './axiosConfig'
+import axios from './axios_config'
 
 let _axios = axios();
 
