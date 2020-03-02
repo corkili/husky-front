@@ -1,7 +1,10 @@
 <template>
   <div class="account-book-main">
     <div class="operation-form">
-      <el-button-group>
+      <div style="float: left">
+        <el-tag effect="plain">账目总额： {{ formatMoney(totalMoney) }}</el-tag>
+      </div>
+      <el-button-group style="float: right">
         <el-button type="success" icon="el-icon-refresh" @click="refreshAccountData"
                    :disabled="onRefreshingAccount && onRefreshingAccountBook" round></el-button>
         <el-button type="primary" icon="el-icon-circle-plus-outline" @click="handleShowAccountEditor(-1)"
@@ -145,38 +148,6 @@
     components: {AccountEditor},
     data() {
       return {
-        // accountData: [{
-        //   id: 1,
-        //   datetime: '2020/02/09 19:01:00',
-        //   type: 'expense',
-        //   money: 199.2,
-        //   description: '猫罐头，猫粮',
-        //   accountBooks: [{
-        //     id: 1,
-        //     name: '现金',
-        //     description: '现金账簿'
-        //   }]
-        // }, {
-        //   id: 2,
-        //   datetime: '2020/02/05 18:00:00',
-        //   type: 'income',
-        //   money: 13575.145,
-        //   description: '工资',
-        //   accountBooks: [{
-        //     id: 2,
-        //     name: '数字',
-        //     description: '非现金、数字化账簿，包含银行、微信账户等'
-        //   }]
-        // }],
-        // accountBookData: [{
-        //   id: 1,
-        //   name: '现金',
-        //   description: '现金账簿'
-        // }, {
-        //   id: 2,
-        //   name: '数字',
-        //   description: '非现金、数字化账簿，包含银行、微信账户等'
-        // }],
         accountData: [],
         accountBookData: [],
         search: '',
@@ -377,6 +348,18 @@
             return true
           }
         })
+      },
+      totalMoney() {
+        let accountData = this.accountTableData;
+        let total = 0;
+        for (let i in accountData) {
+          if (accountData[i].type === 'income') {
+            total += accountData[i].money
+          } else if (accountData[i].type === 'expense') {
+            total -= accountData[i].money
+          }
+        }
+        return total;
       }
     },
     created() {
