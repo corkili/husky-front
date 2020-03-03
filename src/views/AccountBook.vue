@@ -34,8 +34,9 @@
       element-loading-text="拼命加载中"
       element-loading-spinner="el-icon-loading"
       element-loading-background="rgba(0, 0, 0, 0.8)"
-      style="width: 100%">
-      <el-table-column type="expand">
+      height="600"
+      style="width: 100%" :default-sort="{prop:'datetime', order:'descending'}">
+      <el-table-column type="expand" prop="datetime" sortable>
         <template slot-scope="scope">
           <el-form label-position="left" class="account-table-expand">
             <el-form-item label="账目时间">
@@ -86,7 +87,7 @@
         </template>
       </el-table-column>
       <el-table-column
-        label="账目金额">
+        label="账目金额" sortable>
         <template slot-scope="scope">
           <span>{{ formatMoney(scope.row.money) }}</span>
         </template>

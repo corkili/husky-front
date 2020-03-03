@@ -179,6 +179,8 @@
 
         this.onSubmit = true;
 
+        console.log(params);
+
         let promise;
         if (this.isNew) {
           promise = accountBookApi.createAccount(params);
