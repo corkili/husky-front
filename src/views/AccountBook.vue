@@ -2,7 +2,9 @@
   <div class="account-book-main">
     <div class="operation-form">
       <div style="float: left">
-        <el-tag effect="plain">账目总额： {{ formatMoney(totalMoney) }}</el-tag>
+        <el-tag effect="plain" type="primary">明账： {{ formatMoney(totalMoney) }}</el-tag>
+        <el-tag effect="plain" type="info" style="margin-left: 10px">实账： {{ formatMoney(totalFutureMoney) }}</el-tag>
+        <el-tag effect="plain" type="danger" style="margin-left: 10px">待还： {{ formatMoney(totalLoanMoney) }}</el-tag>
       </div>
       <el-button-group style="float: right">
         <el-button type="success" icon="el-icon-refresh" @click="refreshAccountData"
@@ -36,7 +38,7 @@
       element-loading-background="rgba(0, 0, 0, 0.8)"
       height="600"
       style="width: 100%" :default-sort="{prop:'datetime', order:'descending'}">
-      <el-table-column type="expand" prop="datetime" sortable>
+      <el-table-column type="expand" prop="datetime">
         <template slot-scope="scope">
           <el-form label-position="left" class="account-table-expand">
             <el-form-item label="账目时间">
@@ -72,13 +74,13 @@
         </template>
       </el-table-column>
       <el-table-column
-        label="账目时间">
+        label="账目时间" sortable :sort-method="sortByTime" :filters="dateFilters" :filter-method="dateFilterHandler">
         <template slot-scope="scope">
           <span>{{ scope.row.datetime }}</span>
         </template>
       </el-table-column>
       <el-table-column
-        label="账目类型">
+        label="账目类型" :filters="typeFilters" :filter-method="typeFilterHandler">
         <template slot-scope="scope">
           <el-tag
             :type="getTagTypeOfAccountType(scope.row.type)"
@@ -87,13 +89,13 @@
         </template>
       </el-table-column>
       <el-table-column
-        label="账目金额" sortable>
+        label="账目金额" sortable :sort-method="sortByMoney">
         <template slot-scope="scope">
           <span>{{ formatMoney(scope.row.money) }}</span>
         </template>
       </el-table-column>
       <el-table-column
-        label="所属账簿">
+        label="所属账簿" :filters="accountBookFilters" :filter-method="accountBookFilterHandler">
         <template slot-scope="scope">
           <el-popover v-for="accountBook in scope.row.accountBooks"
                       :key="accountBook.id"
@@ -160,6 +162,18 @@
       }
     },
     methods: {
+      sortByTime(a, b) {
+        if (a.datetime < b.datetime) {
+          return -1;
+        } else if (a.datetime > b.datetime) {
+          return 1;
+        } else {
+          return 0;
+        }
+      },
+      sortByMoney(a, b) {
+        return a.money - b.money;
+      },
       refreshAccountData() {
         this.onRefreshingAccount = true;
         let _this = this;
@@ -215,6 +229,10 @@
           return 'success'
         } else if (accountType === '支出' || accountType.toLowerCase() === 'expense') {
           return 'warning'
+        } else if (accountType === '贷款' || accountType.toLowerCase() === 'loan') {
+          return 'danger'
+        } else if (accountType === '还款' || accountType.toLowerCase() === 'repay_loan') {
+          return 'primary'
         } else {
           return 'info'
         }
@@ -224,6 +242,10 @@
           return '收入'
         } else if (accountType === '支出' || accountType.toLowerCase() === 'expense') {
           return '支出'
+        } else if (accountType === '贷款' || accountType.toLowerCase() === 'loan') {
+          return '贷款'
+        } else if (accountType === '还款' || accountType.toLowerCase() === 'repay_loan') {
+          return '还款'
         } else {
           return '未知'
         }
@@ -329,20 +351,90 @@
             str += ' ' + this.generateSearchString(data[index])
           }
         } else if (dataType === 'Number') {
-          str += this.formatMoney(data).replace(/,/, '') + ' ' + data
+          str += this.formatMoney(data).replace(/,/g, '') + ' ' + data
         } else if (dataType === 'String' || dataType === 'Boolean') {
           str += data
         }
         return str
+      },
+      typeFilterHandler(value, row) {
+        return value === row.type;
+      },
+      dateFilterHandler(value, row) {
+        return row.datetime.startsWith(value);
+      },
+      accountBookFilterHandler(value, row) {
+        let books = row.accountBooks;
+        for (let i in books) {
+          if (books[i].name === value) {
+            return true;
+          }
+        }
+        return false;
       }
     },
     computed: {
+      accountBookFilters() {
+        let arr = [];
+        let accountData = this.accountData;
+        for (let i in accountData) {
+          let books = accountData[i].accountBooks;
+            for (let j in books) {
+            if (arr.indexOf(books[j].name) < 0) {
+              arr.push(books[j].name)
+            }
+          }
+        }
+        let filters = [];
+        for (let name of arr) {
+          filters.push({
+            text: name,
+            value: name
+          })
+        }
+        return filters;
+      },
+      dateFilters() {
+        let dateArr = [];
+        let accountData = this.accountData;
+        for (let i in accountData) {
+          let date = accountData[i].datetime.split(' ')[0];
+          if (dateArr.indexOf(date) < 0) {
+            dateArr.push(date)
+          }
+        }
+        let filters = [];
+        for (let date of dateArr) {
+          filters.push({
+            text: date,
+            value: date
+          })
+        }
+        return filters;
+      },
+      typeFilters() {
+        return [{
+          text: '收入',
+          value: 'income'
+        }, {
+          text: '支出',
+          value: 'expense'
+        }, {
+          text: '贷款',
+          value: 'loan'
+        }, {
+          text: '还款',
+          value: 'repay_loan'
+        }]
+      },
       accountTableData() {
         let _this = this;
         return this.accountData.filter(data => {
           if (this.search) {
-            let dataStr = _this.generateSearchString(data).replace(/income/, 'income 收入')
-              .replace(/expense/, 'expense 支出');
+            let dataStr = _this.generateSearchString(data).replace(/income/g, 'income 收入')
+              .replace(/expense/g, 'expense 支出')
+              .replace(/loan/g, 'loan 贷款')
+              .replace(/repay_loan/g, 'repay_loan 还款')
             let searchStr = this.search.toLowerCase();
             return dataStr.toLowerCase().includes(searchStr)
           } else {
@@ -351,13 +443,37 @@
         })
       },
       totalMoney() {
-        let accountData = this.accountTableData;
+        let accountData = this.accountData;
         let total = 0;
         for (let i in accountData) {
           if (accountData[i].type === 'income') {
             total += accountData[i].money
-          } else if (accountData[i].type === 'expense') {
+          } else if (accountData[i].type === 'expense' || accountData[i].type === 'repay_loan') {
             total -= accountData[i].money
+          }
+        }
+        return total;
+      },
+      totalFutureMoney() {
+        let accountData = this.accountData;
+        let total = 0;
+        for (let i in accountData) {
+          if (accountData[i].type === 'income') {
+            total += accountData[i].money
+          } else if (accountData[i].type === 'expense' || accountData[i].type === 'loan') {
+            total -= accountData[i].money
+          }
+        }
+        return total;
+      },
+      totalLoanMoney() {
+        let accountData = this.accountData;
+        let total = 0;
+        for (let i in accountData) {
+          if (accountData[i].type === 'repay_loan') {
+            total -= accountData[i].money
+          } else if (accountData[i].type === 'loan') {
+            total += accountData[i].money
           }
         }
         return total;

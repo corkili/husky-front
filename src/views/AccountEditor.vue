@@ -27,8 +27,12 @@
         </el-date-picker>
       </el-form-item>
       <el-form-item label="账目类型" :label-width="formLabelWidth">
-        <el-radio v-model="form.type" label="expense" border size="medium">支出</el-radio>
-        <el-radio v-model="form.type" label="income" border size="medium">收入</el-radio>
+        <el-radio-group v-model="form.type">
+          <el-radio-button label="expense" border size="medium">支出</el-radio-button>
+          <el-radio-button label="income" border size="medium">收入</el-radio-button>
+          <el-radio-button label="loan" border size="medium">贷款</el-radio-button>
+          <el-radio-button label="repay_loan" border size="medium">还款</el-radio-button>
+        </el-radio-group>
       </el-form-item>
       <el-form-item label="账目金额" :label-width="formLabelWidth">
         <el-input-number v-model="form.money" :precision="2" :step="0.1" :min="0" :controls="false"></el-input-number>
