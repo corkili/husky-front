@@ -16,4 +16,7 @@ export default {
   deleteAccount(params) {
     return api.postJson('api/account_book/delete_account', params);
   },
+  statisticAccount(params) {
+    return api.postJson('/api/account_book/statistic', params);
+  }
 }

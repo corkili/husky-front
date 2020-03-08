@@ -2,12 +2,12 @@
   <div class="account-book-main">
     <div class="operation-form">
       <div style="float: left">
-        <el-tag effect="plain" type="primary">明账： {{ formatMoney(totalMoney) }}</el-tag>
-        <el-tag effect="plain" type="info" style="margin-left: 10px">实账： {{ formatMoney(totalFutureMoney) }}</el-tag>
-        <el-tag effect="plain" type="danger" style="margin-left: 10px">待还： {{ formatMoney(totalLoanMoney) }}</el-tag>
+        <el-tag effect="plain" type="primary">明账： {{ formatMoney(statistic.totalMoney) }}</el-tag>
+        <el-tag effect="plain" type="info" style="margin-left: 10px">实账： {{ formatMoney(statistic.totalFutureMoney) }}</el-tag>
+        <el-tag effect="plain" type="danger" style="margin-left: 10px">待还： {{ formatMoney(statistic.totalLoanMoney) }}</el-tag>
       </div>
       <el-button-group style="float: right">
-        <el-button type="success" icon="el-icon-refresh" @click="refreshAccountData"
+        <el-button type="success" icon="el-icon-refresh" @click="refreshAll"
                    :disabled="onRefreshingAccount && onRefreshingAccountBook" round></el-button>
         <el-button type="primary" icon="el-icon-circle-plus-outline" @click="handleShowAccountEditor(-1)"
                    :disabled="onRefreshingAccount && onRefreshingAccountBook" round>新增账目</el-button>
@@ -36,7 +36,7 @@
       element-loading-text="拼命加载中"
       element-loading-spinner="el-icon-loading"
       element-loading-background="rgba(0, 0, 0, 0.8)"
-      height="600"
+      height="722"
       style="width: 100%" :default-sort="{prop:'datetime', order:'descending'}">
       <el-table-column type="expand" prop="datetime">
         <template slot-scope="scope">
@@ -140,6 +140,18 @@
         </template>
       </el-table-column>
     </el-table>
+    <div class="block">
+      <el-pagination
+        background
+        :disabled="onRefreshingAccount"
+        :hide-on-single-page="true"
+        @current-change="handlePageChange"
+        :current-page.sync="pagination.currentPage"
+        :page-size="pagination.pageSize"
+        layout="total, prev, pager, next, jumper"
+        :total="pagination.totalCount">
+      </el-pagination>
+    </div>
   </div>
 </template>
 
@@ -156,12 +168,35 @@
         search: '',
         onRefreshingAccount: false,
         onRefreshingAccountBook: false,
+        onRefreshingStatistic: false,
         isCreatingAccount: true,
         editingAccount: false,
-        editingAccountData: {}
+        editingAccountData: {},
+        accountDataCache: {},
+        pagination: {
+          currentPage: 1,
+          pageSize: 10,
+          totalCount: 0
+        },
+        statistic: {
+          totalMoney: 0,
+          totalFutureMoney: 0,
+          totalLoanMoney: 0
+        },
+        sort: {
+          sortRules: [] // {field: '', method: 'desc'/'asc'}
+        },
+        filters: [] // {field: '', operation: '', value: any}
       }
     },
     methods: {
+      handlePageChange(curPage) {
+        if (this.accountDataCache['' + curPage] !== undefined) {
+          this.accountData = this.accountDataCache['' + curPage];
+        } else {
+          this.refreshAccountData();
+        }
+      },
       sortByTime(a, b) {
         if (a.datetime < b.datetime) {
           return -1;
@@ -174,14 +209,52 @@
       sortByMoney(a, b) {
         return a.money - b.money;
       },
+      refreshAll() {
+        this.accountDataCache = {};
+        this.pagination.currentPage = 1;
+        this.pagination.totalCount = 0;
+        this.refreshAccountData();
+        this.refreshAccountBookData();
+        this.refreshStatistic();
+      },
+      refreshStatistic() {
+        if (!this.onRefreshingStatistic) {
+          this.onRefreshingStatistic = true;
+          let _this = this;
+          accountBookApi.statisticAccount({all: true})
+            .then((response => {
+              if (response.code === 0) {
+                _this.statistic = response.data;
+              } else {
+                this.$message({
+                  type: 'warning',
+                  message: response.uiMsg
+                });
+              }
+              _this.onRefreshingStatistic = false;
+            }))
+            .catch((error) => {
+              _this.onRefreshingStatistic = false;
+              this.$message({
+                message: '网络异常，请重试',
+                type: 'warning'
+              });
+              console.log(error);
+            });
+        }
+      },
       refreshAccountData() {
         this.onRefreshingAccount = true;
         let _this = this;
-        accountBookApi.retrieveAccount({all: true})
+        accountBookApi.retrieveAccount({
+          all: false,
+          pagination: this.pagination
+        })
           .then((response => {
             if (response.code === 0) {
               _this.accountData = response.data.accounts;
-              console.log(response.data.accounts)
+              _this.accountDataCache['' + _this.pagination.currentPage] = _this.accountData;
+              _this.pagination = response.data.pagination;
             } else {
               this.$message({
                 type: 'warning',
@@ -189,7 +262,6 @@
               });
             }
             _this.onRefreshingAccount = false;
-            _this.refreshAccountBookData();
           }))
           .catch((error) => {
             this.$message({
@@ -262,7 +334,8 @@
       },
       handleSubmit(data) {
         this.removeAccountDataById(data.id);
-        this.accountData.push(data);
+        // this.accountData.push(data);
+        this.refreshAll();
         this.$refs.drawer.closeDrawer()
       },
       removeAccountDataById(id) {
@@ -280,10 +353,11 @@
             if (response.code === 0) {
               let successIds = response.data.successIds;
               if (successIds.length > 0) {
-                for (let i in successIds) {
-                  let id = successIds[i];
-                  _this.removeAccountDataById(id);
-                }
+                // for (let i in successIds) {
+                //   let id = successIds[i];
+                //   _this.removeAccountDataById(id);
+                // }
+                _this.refreshAll();
                 this.$message({
                   type: 'success',
                   message: '删除账目成功'
@@ -301,7 +375,6 @@
               });
             }
             _this.onRefreshingAccount = false;
-            _this.refreshAccountBookData();
           }))
           .catch((error) => {
             this.$message({
@@ -441,46 +514,10 @@
             return true
           }
         })
-      },
-      totalMoney() {
-        let accountData = this.accountData;
-        let total = 0;
-        for (let i in accountData) {
-          if (accountData[i].type === 'income') {
-            total += accountData[i].money
-          } else if (accountData[i].type === 'expense' || accountData[i].type === 'repay_loan') {
-            total -= accountData[i].money
-          }
-        }
-        return total;
-      },
-      totalFutureMoney() {
-        let accountData = this.accountData;
-        let total = 0;
-        for (let i in accountData) {
-          if (accountData[i].type === 'income') {
-            total += accountData[i].money
-          } else if (accountData[i].type === 'expense' || accountData[i].type === 'loan') {
-            total -= accountData[i].money
-          }
-        }
-        return total;
-      },
-      totalLoanMoney() {
-        let accountData = this.accountData;
-        let total = 0;
-        for (let i in accountData) {
-          if (accountData[i].type === 'repay_loan') {
-            total -= accountData[i].money
-          } else if (accountData[i].type === 'loan') {
-            total += accountData[i].money
-          }
-        }
-        return total;
       }
     },
     created() {
-      this.refreshAccountData();
+      this.refreshAll();
     }
   }
 </script>
