@@ -1,6 +1,4 @@
-import axiosConfig from '../../plugins/axiosConfig'
-
-let axios = axiosConfig();
+import api from '../../api/api'
 
 const state = {
   id : -1,
@@ -35,43 +33,16 @@ const mutations = {
 
 const actions = {
   async login(context, params) {
-    return new Promise(function(resolve, reject) {
-      axios.post('/api/user/login', params)
-        .then((response) => {
-          resolve(response)
-        })
-        .catch(function(error) {
-          reject(error);
-          console.log(error);
-        });
-    });
+    return api.postJson('/api/user/login', params)
   },
   async logout(context) {
-    return new Promise(function (resolve, reject) {
-      let params = {
-        id: context.state.id
-      };
-      axios.post('/api/user/logout', params)
-        .then((response) => {
-          resolve(response)
-        })
-        .catch(function (error) {
-          reject(error);
-          console.log(error);
-        })
-    })
+    let params = {
+      id: context.state.id
+    };
+    return api.postJson('/api/user/logout', params)
   },
   async register(context, params) {
-    return new Promise(function(resolve, reject) {
-      axios.post('/api/user/register', params)
-        .then((response) => {
-          resolve(response)
-        })
-        .catch(function(error) {
-          reject(error);
-          console.log(error);
-        });
-    });
+    return api.postJson('/api/user/register', params)
   }
 };
 

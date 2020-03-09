@@ -18,12 +18,19 @@
           this.$store.dispatch('user/logout')
             .then((response => {
               console.log(response);
-              this.$message({
-                message: '注销成功',
-                type: 'success'
-              });
-              _this.$store.commit('user/onLogout');
-              _this.$router.replace('/sign_in');
+              if (response.code === 0) {
+                this.$message({
+                  message: '注销成功',
+                  type: 'success'
+                });
+                _this.$store.commit('user/onLogout');
+                _this.$router.replace('/sign_in');
+              } else {
+                this.$message({
+                  message: response.uiMsg,
+                  type: 'warning'
+                });
+              }
             }))
             .catch((error) => {
               console.log(error);
